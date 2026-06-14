@@ -54,19 +54,35 @@ class OrdersTable
             ])
             ->recordActions([
                 ViewAction::make(),
-                Action::make('changeStatus')
-                    ->label('Status')
-                    ->icon('heroicon-o-arrow-path')
-                    ->schema([
-                        Select::make('status')
-                            ->options(OrderStatus::class)
-                            ->required()
-                            ->native(false),
-                    ])
-                    ->fillForm(fn($record) => ['status' => $record->status])
-                    ->action(fn($record, array $data) => $record->update(['status' => $data['status']])),
+
+                Action::make('advance')
+                    ->label(fn($record) => match ($record->status) {
+                        OrderStatus::Pending => 'Mark Processing',
+                        OrderStatus::Processing => 'Mark Completed',
+                        default => null,
+                    })
+                    ->icon('heroicon-o-arrow-right')
+                    ->disabled(fn($record) => in_array($record->status, [OrderStatus::Completed, OrderStatus::Cancelled]))
+                    ->action(fn($record) => $record->update([
+                        'status' => match ($record->status) {
+                            OrderStatus::Pending => OrderStatus::Processing->value,
+                            OrderStatus::Processing => OrderStatus::Completed->value,
+                        },
+                    ])),
+
+                Action::make('cancel')
+                    ->label('Cancel Order')
+                    ->color('danger')
+                    ->disabled(fn($record) => in_array($record->status, [OrderStatus::Completed, OrderStatus::Cancelled]))
+                    ->requiresConfirmation()
+                    ->action(fn($record) => $record->update([
+                        'status' => OrderStatus::Cancelled,
+                    ])),
+
                 EditAction::make(),
+
                 DeleteAction::make(),
+
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
