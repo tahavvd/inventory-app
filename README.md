@@ -85,7 +85,7 @@ Before you start, make sure you have the following installed:
 ### Step 1 — Clone the Repository
 
 ```bash
-git clone https://github.com/yourname/rivocode.git
+git clone https://github.com/tahavvd/inventory-app.git
 cd rivocode
 ```
 
@@ -170,8 +170,6 @@ Log in with the default admin credentials:
 |---|---|
 | Email | `admin@gmail.com` |
 | Password | `password` |
-
-> ⚠️ **Change your password immediately after first login.**
 
 ---
 
@@ -356,6 +354,6 @@ This project is open-sourced under the [MIT License](LICENSE).
 
 <div align="center">
 
-Built with ❤️ using Laravel & Filament
+Built using Laravel & Filament
 
 </div>
