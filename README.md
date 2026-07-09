@@ -86,7 +86,7 @@ Before you start, make sure you have the following installed:
 
 ```bash
 git clone https://github.com/tahavvd/inventory-app.git
-cd rivocode
+cd inventory-app
 ```
 
 ---
