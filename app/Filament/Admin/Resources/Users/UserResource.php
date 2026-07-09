@@ -58,4 +58,9 @@ class UserResource extends Resource
         return parent::getEloquentQuery()
             ->where('role', UserRole::Employee);
     }
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()->isAdmin();
+    }
 }
