@@ -18,7 +18,7 @@ class WarehouseResource extends Resource
 {
     protected static ?string $model = Warehouse::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice;
 
     public static function form(Schema $schema): Schema
     {

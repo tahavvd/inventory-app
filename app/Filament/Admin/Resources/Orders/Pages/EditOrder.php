@@ -3,8 +3,8 @@
 namespace App\Filament\Admin\Resources\Orders\Pages;
 
 use App\Filament\Admin\Resources\Orders\OrderResource;
-use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use App\Enums\OrderStatus;
 
 class EditOrder extends EditRecord
 {
@@ -25,8 +25,17 @@ class EditOrder extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [
-            DeleteAction::make(),
-        ];
+        return [];
+    }
+
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+
+        if ($this->record->status !== OrderStatus::Pending) {
+            $this->redirect(
+                $this->getResource()::getUrl('view', ['record' => $this->record])
+            );
+        }
     }
 }

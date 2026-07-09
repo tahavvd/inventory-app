@@ -15,6 +15,10 @@ class Order extends Model
 {
     use HasFactory;
 
+    protected $attributes = [
+        'status' => OrderStatus::Pending,
+    ];
+
     protected function casts(): array
     {
         return [

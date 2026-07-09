@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ProductUnit;
+use App\Models\Inventory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -36,5 +37,10 @@ class Product extends Model
     public function stockTransactions(): HasMany
     {
         return $this->hasMany(StockTransaction::class);
+    }
+
+    public function inventories(): HasMany
+    {
+        return $this->hasMany(Inventory::class);
     }
 }

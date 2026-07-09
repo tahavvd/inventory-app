@@ -4,11 +4,7 @@ namespace App\Filament\Admin\Resources\Orders\Tables;
 
 use App\Enums\OrderStatus;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -19,7 +15,6 @@ class OrdersTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->selectable()
             ->columns([
                 TextColumn::make('id')
                     ->label('Order #')
@@ -79,15 +74,10 @@ class OrdersTable
                         'status' => OrderStatus::Cancelled,
                     ])),
 
-                EditAction::make(),
+                EditAction::make()
+                    ->disabled(fn($record) => $record->status !== OrderStatus::Pending),
 
-                DeleteAction::make(),
 
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ]);
     }
 }

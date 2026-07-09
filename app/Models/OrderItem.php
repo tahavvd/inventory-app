@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Warehouse;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['order_id', 'product_id', 'quantity', 'unit_price'])]
+#[Fillable(['order_id', 'product_id', 'quantity', 'unit_price', 'warehouse_id'])]
 class OrderItem extends Model
 {
     use HasFactory;
@@ -27,6 +28,11 @@ class OrderItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class);
     }
 
     /**

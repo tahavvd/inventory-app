@@ -2,11 +2,13 @@
 
 namespace App\Filament\Admin\Resources\StockTransactions\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
+
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\SelectFilter;
+use App\Enums\StockTransactionType;
+
 
 class StockTransactionsTable
 {
@@ -14,40 +16,48 @@ class StockTransactionsTable
     {
         return $table
             ->columns([
+                TextColumn::make('id')
+                    ->label('Transaction #')
+                    ->sortable(),
                 TextColumn::make('product.name')
-                    ->searchable(),
-                TextColumn::make('warehouse.name')
-                    ->searchable(),
-                TextColumn::make('user.name')
-                    ->searchable(),
-                TextColumn::make('supplier.id')
-                    ->searchable(),
-                TextColumn::make('order.id')
-                    ->searchable(),
-                TextColumn::make('type')
-                    ->badge(),
+                    ->label('Product')
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('quantity')
-                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('type')
                     ->sortable(),
                 TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->label('Created')
+                    ->dateTime('d M Y, H:i')
+                    ->sortable(),
+                TextColumn::make('user.name')
+                    ->label('Created By')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('supplier.name')
+                    ->label('Supplier')
+                    ->placeholder('—')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('order.customer.name')
+                    ->label('Customer')
+                    ->placeholder('—')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('warehouse.name')
+                    ->label('Warehouse')
+                    ->searchable()
+                    ->sortable(),
             ])
             ->filters([
-                //
+                SelectFilter::make('type')
+                    ->options([
+                        StockTransactionType::In->value  => 'In',
+                        StockTransactionType::Out->value => 'Out',
+                    ])
+                    ->placeholder('All'),
             ])
-            ->recordActions([
-                EditAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->filtersLayout(FiltersLayout::AboveContent);
     }
 }

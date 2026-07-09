@@ -9,6 +9,11 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Schema;
+use App\Enums\OrderStatus;
+use App\Models\StockTransaction;
+use App\Enums\StockTransactionType;
+use Filament\Actions\Action;
+use Illuminate\Support\Facades\Auth;
 
 class ViewOrder extends ViewRecord
 {
@@ -34,7 +39,8 @@ class ViewOrder extends ViewRecord
                                 'processing' => 'info',
                                 'completed' => 'success',
                                 'cancelled' => 'danger',
-                            }),
+                            })
+                            ->extraAttributes(['style' => 'display: inline-flex']),
                         TextEntry::make('total')
                             ->money('DZD'),
                         TextEntry::make('created_at')
@@ -51,7 +57,8 @@ class ViewOrder extends ViewRecord
                                     ->label('Product'),
                                 TextEntry::make('product.unit')
                                     ->label('Unit')
-                                    ->badge(),
+                                    ->badge()
+                                    ->extraAttributes(['style' => 'display: inline-flex']),
                                 TextEntry::make('quantity')
                                     ->label('Quantity'),
                                 TextEntry::make('unit_price')
@@ -77,7 +84,8 @@ class ViewOrder extends ViewRecord
                                         'processing' => 'info',
                                         'completed' => 'success',
                                         'cancelled' => 'danger',
-                                    }),
+                                    })
+                                    ->extraAttributes(['style' => 'display: inline-flex']),
                                 TextEntry::make('user.name')
                                     ->label('Changed By'),
                                 TextEntry::make('created_at')
@@ -92,7 +100,27 @@ class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            EditAction::make(),
+            EditAction::make()
+                ->visible(fn() => $this->record->status === OrderStatus::Pending),
+
+            Action::make('cancel')
+                ->label('Cancel Order')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->modalHeading('Cancel this order?')
+                ->modalDescription('This will reverse all stock changes made by this order.')
+                ->visible(fn() => !in_array($this->record->status, [
+                    OrderStatus::Cancelled,
+                    OrderStatus::Completed,
+                ]))
+                ->action(function () {
+                    $this->record->update(['status' => OrderStatus::Cancelled]);
+
+                    \Filament\Notifications\Notification::make()
+                        ->title('Order cancelled and stock reversed.')
+                        ->success()
+                        ->send();
+                })
         ];
     }
 }

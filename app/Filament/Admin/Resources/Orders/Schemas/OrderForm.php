@@ -35,11 +35,6 @@ class OrderForm
                         TextInput::make('address')
                             ->maxLength(500),
                     ]),
-                Select::make('status')
-                    ->options(OrderStatus::class)
-                    ->default(OrderStatus::Pending)
-                    ->required()
-                    ->native(false),
                 Repeater::make('items')
                     ->relationship('items')
                     ->columnSpanFull()
@@ -73,7 +68,28 @@ class OrderForm
                             ->rules(fn($get) => in_array(
                                 $get('unit'),
                                 [ProductUnit::Piece->value, ProductUnit::Box->value]
-                            ) ? ['integer', 'min:1'] : ['numeric', 'min:0.01']),
+                            ) ? ['integer', 'min:1'] : ['numeric', 'min:0.01'])
+                            ->rule(function ($get) {
+                                return function (String $attribute, $value, \Closure $fail) use ($get) {
+                                    $inventory = \App\Models\Inventory::where(
+                                        'product_id',
+                                        $get('product_id')
+                                    )->where(
+                                        'warehouse_id',
+                                        $get('warehouse_id')
+                                    )->first();
+
+                                    $available = $inventory?->quantity ?? 0;
+
+                                    if ($value > $available) {
+                                        if ($available == 0) {
+                                            $fail('The selected product is out of stock.');
+                                        } else {
+                                            $fail('The selected product has only ' . $available . ' available in the selected warehouse.');
+                                        }
+                                    }
+                                };
+                            }),
 
                         TextInput::make('unit_price')
                             ->numeric()
@@ -86,8 +102,25 @@ class OrderForm
                             ->prefix('Unit:')
                             ->placeholder('Select a product first')
                             ->dehydrated(false),
+                        Select::make('warehouse_id')
+                            ->label('Warehouse')
+                            ->required()
+                            ->native(false)
+                            ->options(function ($get) {
+                                $productId = $get('product_id');
+                                if (!$productId) return [];
+
+                                return \App\Models\Inventory::query()
+                                    ->where('product_id', $productId)
+                                    ->where('quantity', '>', 0)
+                                    ->with('warehouse')
+                                    ->get()
+                                    ->mapWithKeys(fn($inventory) => [
+                                        $inventory->warehouse_id => $inventory->warehouse->name . ' (' . $inventory->quantity . ' available)'
+                                    ]);
+                            }),
                     ])
-                    ->columns(4)
+                    ->columns(5)
                     ->addActionLabel('Add Product')
                     ->minItems(1),
             ]);
