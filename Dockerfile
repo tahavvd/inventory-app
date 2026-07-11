@@ -1,3 +1,11 @@
+FROM node:22-alpine AS node_builder
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
 FROM php:8.5-fpm
 
 RUN apt-get update && apt-get install -y \
@@ -11,6 +19,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 COPY . .
+COPY --from=node_builder /app/public/build ./public/build
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
 
@@ -24,3 +33,4 @@ RUN chmod +x /usr/local/bin/start.sh
 EXPOSE 80
 
 CMD ["/usr/local/bin/start.sh"]
+
