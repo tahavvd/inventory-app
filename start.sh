@@ -13,7 +13,7 @@ envsubst '${PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/sit
 
 echo "[START] Running Laravel migrations..."
 cd /var/www/html
-php artisan migrate --force 2>&1
+php artisan migrate --seed --force 2>&1
 echo "[START] Migrations completed"
 
 echo "[START] Clearing Laravel caches..."
