@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use App\Enums\UserRole;
 
 class DatabaseSeeder extends Seeder
@@ -16,12 +17,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::create([
-            'name'     => 'Admin',
-            'email'    => 'admin@gmail.com',
-            'password' => bcrypt('passwordAaBb'),
-            'role'     => UserRole::Admin,
-            'phone'    => '0000000000',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'admin@gmail.com'],
+            [
+                'name'     => 'Admin',
+                'password' => Hash::make('passwordAaBb'),
+                'role'     => UserRole::Admin,
+                'phone'    => '0000000000',
+            ]
+        );
     }
 }
