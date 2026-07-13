@@ -9,8 +9,8 @@ RUN npm run build
 FROM php:8.5-fpm
 
 RUN apt-get update && apt-get install -y \
-    git curl zip unzip nginx gettext-base libpng-dev libonig-dev libxml2-dev libzip-dev \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+    git curl zip unzip nginx gettext-base libpng-dev libonig-dev libxml2-dev libzip-dev libicu-dev \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl
 
 RUN ln -sf /dev/stdout /var/log/nginx/access.log \
     && ln -sf /dev/stderr /var/log/nginx/error.log    
