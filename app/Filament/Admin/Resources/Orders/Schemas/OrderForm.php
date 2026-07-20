@@ -2,7 +2,6 @@
 
 namespace App\Filament\Admin\Resources\Orders\Schemas;
 
-use App\Enums\OrderStatus;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -39,6 +38,8 @@ class OrderForm
                     ->relationship('items')
                     ->columnSpanFull()
                     ->schema([
+                        Hidden::make('id')->dehydrated(false), // lets us know which OrderItem this is, when editing
+
                         Select::make('product_id')
                             ->relationship('product', 'name')
                             ->searchable()
@@ -59,18 +60,18 @@ class OrderForm
                             ->live()
                             ->step(fn($get) => in_array(
                                 $get('unit'),
-                                [ProductUnit::Piece->value, ProductUnit::Box->value]
-                            ) ? 1 : 0.01)
+                                [ProductUnit::Kg->value, ProductUnit::Liter->value]
+                            ) ? 0.01 : 1)
                             ->minValue(fn($get) => in_array(
                                 $get('unit'),
-                                [ProductUnit::Piece->value, ProductUnit::Box->value]
-                            ) ? 1 : 0.01)
+                                [ProductUnit::Kg->value, ProductUnit::Liter->value]
+                            ) ? 0.01 : 1)
                             ->rules(fn($get) => in_array(
                                 $get('unit'),
-                                [ProductUnit::Piece->value, ProductUnit::Box->value]
-                            ) ? ['integer', 'min:1'] : ['numeric', 'min:0.01'])
+                                [ProductUnit::Kg->value, ProductUnit::Liter->value]
+                            ) ? ['numeric', 'min:0.01'] : ['integer', 'min:1'])
                             ->rule(function ($get) {
-                                return function (String $attribute, $value, \Closure $fail) use ($get) {
+                                return function (string $attribute, $value, \Closure $fail) use ($get) {
                                     $inventory = \App\Models\Inventory::where(
                                         'product_id',
                                         $get('product_id')
@@ -80,6 +81,20 @@ class OrderForm
                                     )->first();
 
                                     $available = $inventory?->quantity ?? 0;
+
+                                    // If we're editing an existing order item, and the product/warehouse
+                                    // haven't changed, the stock it already "used" should count as available too.
+                                    $itemId = $get('id');
+                                    if ($itemId) {
+                                        $originalItem = \App\Models\OrderItem::find($itemId);
+                                        if (
+                                            $originalItem
+                                            && $originalItem->product_id == $get('product_id')
+                                            && $originalItem->warehouse_id == $get('warehouse_id')
+                                        ) {
+                                            $available += $originalItem->quantity;
+                                        }
+                                    }
 
                                     if ($value > $available) {
                                         if ($available == 0) {
@@ -100,23 +115,34 @@ class OrderForm
                         TextInput::make('unit')
                             ->readOnly()
                             ->prefix('Unit:')
-                            ->placeholder('Select a product first')
                             ->dehydrated(false),
                         Select::make('warehouse_id')
                             ->label('Warehouse')
+                            ->relationship('warehouse', 'name')
                             ->required()
                             ->native(false)
                             ->options(function ($get) {
                                 $productId = $get('product_id');
                                 if (!$productId) return [];
 
+                                $itemId = $get('id');
+                                $originalItem = $itemId ? \App\Models\OrderItem::find($itemId) : null;
+
                                 return \App\Models\Inventory::query()
                                     ->where('product_id', $productId)
-                                    ->where('quantity', '>', 0)
                                     ->with('warehouse')
                                     ->get()
+                                    ->map(function ($inventory) use ($originalItem) {
+                                        $available = $inventory->quantity;
+                                        if ($originalItem && $originalItem->warehouse_id == $inventory->warehouse_id) {
+                                            $available += $originalItem->quantity;
+                                        }
+                                        $inventory->available = $available;
+                                        return $inventory;
+                                    })
+                                    ->filter(fn($inventory) => $inventory->available > 0)
                                     ->mapWithKeys(fn($inventory) => [
-                                        $inventory->warehouse_id => $inventory->warehouse->name . ' (' . $inventory->quantity . ' available)'
+                                        $inventory->warehouse_id => $inventory->warehouse->name . ' (' . $inventory->available . ' available)'
                                     ]);
                             }),
                     ])
