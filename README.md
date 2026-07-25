@@ -21,13 +21,17 @@ Track stock, manage orders, handle suppliers and warehouses — all in one place
 ## ✨ Features
 
 ### 📊 Inventory & Stock
+
 - Real-time inventory tracking per product per warehouse
 - Automatic stock deduction on every order
 - Automatic stock restoration on order cancellation
 - Race condition protection via database transactions and row locking
 - Full stock transaction history (In / Out) with filters
+- **Browsable Inventory dashboard** — search and filter current stock levels by product, category, or warehouse
+- **Low stock alerts** — get notified the moment a product's stock at any warehouse drops to or below its configured reorder level
 
 ### 🛒 Orders
+
 - Create orders with multiple products and quantities
 - Prevents ordering more than available stock (server-side validation)
 - Order status flow: `Pending → Processing → Completed`
@@ -36,16 +40,19 @@ Track stock, manage orders, handle suppliers and warehouses — all in one place
 - Edit protection — only Pending orders can be modified
 
 ### 🏭 Supplies
+
 - Record incoming stock from suppliers
 - Automatically increments inventory on creation
 - Linked to specific warehouse and supplier
 
 ### 🔐 Role-Based Access Control
+
 - **Admin** — full access to everything including user management
 - **Employee** — access to operations only, cannot see or manage users
 
 ### 🗂️ Resource Management
-- Products with units (Piece, Box, Kg, Liter, Meter)
+
+- Products with units (Piece, Box, Kg, Liter, Meter) and a per-product reorder level
 - Multiple Warehouses
 - Suppliers
 - Customers
@@ -55,14 +62,14 @@ Track stock, manage orders, handle suppliers and warehouses — all in one place
 
 ## 🛠 Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Laravel 12 |
-| Admin Panel | Filament 4 |
-| Frontend | Livewire, Alpine.js, Tailwind CSS |
-| Database | MySQL 8.4 |
-| Local Dev | Laravel Sail (Docker) |
-| Language | PHP 8.5 |
+| Layer       | Technology                        |
+| ----------- | --------------------------------- |
+| Framework   | Laravel 12                        |
+| Admin Panel | Filament 4                        |
+| Frontend    | Livewire, Alpine.js, Tailwind CSS |
+| Database    | MySQL 8.4                         |
+| Local Dev   | Laravel Sail (Docker)             |
+| Language    | PHP 8.5                           |
 
 ---
 
@@ -72,11 +79,11 @@ Track stock, manage orders, handle suppliers and warehouses — all in one place
 
 Before you start, make sure you have the following installed:
 
-| Tool | Windows | Mac | Linux |
-|---|---|---|---|
+| Tool           | Windows                                                     | Mac                                                         | Linux                                                            |
+| -------------- | ----------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------- |
 | Docker Desktop | [Download](https://www.docker.com/products/docker-desktop/) | [Download](https://www.docker.com/products/docker-desktop/) | [Install Docker Engine](https://docs.docker.com/engine/install/) |
-| WSL2 | Required on Windows | Not needed | Not needed |
-| Git | [Download](https://git-scm.com/) | [Download](https://git-scm.com/) | Usually pre-installed |
+| WSL2           | Required on Windows                                         | Not needed                                                  | Not needed                                                       |
+| Git            | [Download](https://git-scm.com/)                            | [Download](https://git-scm.com/)                            | Usually pre-installed                                            |
 
 > **Windows users:** Make sure WSL2 is enabled and Docker Desktop is set to use the WSL2 backend before continuing. All commands below must be run inside your **WSL2 terminal**, not PowerShell or CMD.
 
@@ -98,6 +105,8 @@ cp .env.example .env
 ```
 
 Open `.env` and update the database credentials if needed. The defaults work out of the box with Sail.
+
+> **Queue connection:** this project sends low stock alerts through Laravel's notification system. To keep local setup simple, set `QUEUE_CONNECTION=sync` in `.env` so notifications are delivered instantly without needing a separate queue worker running. If you later want notifications processed asynchronously via the `database` queue driver instead, you'll also need to run a queue worker (`sail artisan queue:work`) at all times — see [Low Stock Alerts](#-low-stock-alerts) below.
 
 ---
 
@@ -125,6 +134,7 @@ docker run --rm \
 ```
 
 This starts:
+
 - **PHP 8.5** application container
 - **MySQL 8.4** database container
 - **Adminer** database GUI at `http://localhost:8080`
@@ -147,7 +157,7 @@ This starts:
 ./vendor/bin/sail artisan migrate --seed
 ```
 
-This creates all database tables and seeds the default admin account.
+This creates all database tables (including notifications and the reorder level column) and seeds the default admin account.
 
 ---
 
@@ -166,10 +176,10 @@ Visit **[http://localhost/admin](http://localhost/admin)** in your browser.
 
 Log in with the default admin credentials:
 
-| Field | Value |
-|---|---|
-| Email | `admin@gmail.com` |
-| Password | `password` |
+| Field    | Value             |
+| -------- | ----------------- |
+| Email    | `admin@gmail.com` |
+| Password | `password`        |
 
 ---
 
@@ -211,7 +221,7 @@ Before creating orders, set up your base data in this order:
 1. **Warehouses** — Add the physical locations where stock is stored
 2. **Suppliers** — Add your stock providers
 3. **Customers** — Add your clients
-4. **Products** — Add products with their unit type (Piece, Box, Kg, etc.)
+4. **Products** — Add products with their unit type (Piece, Box, Kg, etc.) and a **reorder level** (the quantity at which you want to be alerted that stock is running low)
 5. **Supplies** — Record initial stock coming in from suppliers → this fills your inventory
 
 ---
@@ -236,7 +246,7 @@ An order represents stock leaving a warehouse to a customer.
 1. Go to **Orders** → **New Order**
 2. Select the **Customer**
 3. Add **Order Items** — select product, warehouse, and quantity
-   - The system **blocks** you from ordering more than what's available
+    - The system **blocks** you from ordering more than what's available
 4. Save — inventory is automatically decremented per item
 
 ---
@@ -253,11 +263,11 @@ Pending → Processing → Completed
 
 From the **Orders table**, use the action buttons on each row:
 
-| Button | What It Does |
-|---|---|
-| `Mark Processing` | Moves order from Pending to Processing |
-| `Mark Completed` | Moves order from Processing to Completed |
-| `Cancel Order` | Cancels the order and **automatically restores stock** |
+| Button            | What It Does                                           |
+| ----------------- | ------------------------------------------------------ |
+| `Mark Processing` | Moves order from Pending to Processing                 |
+| `Mark Completed`  | Moves order from Processing to Completed               |
+| `Cancel Order`    | Cancels the order and **automatically restores stock** |
 
 > Cancelling an order is safe — all stock taken by that order is returned to inventory automatically.
 
@@ -266,6 +276,7 @@ From the **Orders table**, use the action buttons on each row:
 ### 👁️ Viewing an Order
 
 Click **View** on any order to see:
+
 - Full order details and total
 - All ordered items with quantities and prices
 - Complete status history — who changed what and when
@@ -283,8 +294,35 @@ Only **Pending** orders can be edited. Once an order moves to Processing or Comp
 The **Stock Transactions** resource is your audit trail — every stock movement is recorded here automatically. You cannot create, edit, or delete transactions manually.
 
 Use the **In / Out** filter at the top to switch between:
+
 - **In** — stock arrivals (supplies, cancellation reversals)
 - **Out** — stock departures (orders)
+
+---
+
+### 🔍 Browsing Inventory
+
+The **Inventory** resource gives you a live, read-only view of current stock across your whole business — one row per product per warehouse.
+
+- **Search** by product or warehouse name
+- **Filter** by warehouse, category, "low stock only," or "out of stock only"
+- **Quantity badges** are color-coded: red (out of stock), amber (at or below reorder level), green (healthy stock)
+- Sorted by quantity ascending by default, so the lowest-stock items surface first
+
+> This resource is browse-only. Inventory quantities are always derived from Stock Transactions, so they can't be edited directly here — record a Supply or an Order instead and the numbers update automatically.
+
+---
+
+### 🔔 Low Stock Alerts
+
+Every time an order (or any stock-out transaction) brings a product's quantity at a warehouse down to or below that product's **reorder level**, the system automatically sends an alert:
+
+- **Instant toast notification** for whoever created the transaction
+- **Persistent alert in the notification bell** (top right of the panel) for every Admin user
+
+Set each product's reorder level from the **Products** form — it defaults to `10` but should be tuned per product (a box of screws and a spool of filament don't run "low" at the same number).
+
+> Notifications are delivered via `QUEUE_CONNECTION=sync` by default, so alerts appear immediately with no extra setup. If you switch to the `database` queue driver, you must also keep a queue worker running at all times (`sail artisan queue:work`), otherwise alerts will sit unprocessed and never appear.
 
 ---
 
@@ -301,17 +339,19 @@ Use the **In / Out** filter at the top to switch between:
 
 ## 🔐 Roles
 
-| Feature | Admin | Employee |
-|---|---|---|
-| Dashboard | ✅ | ✅ |
-| Products | ✅ | ✅ |
-| Warehouses | ✅ | ✅ |
-| Suppliers | ✅ | ✅ |
-| Customers | ✅ | ✅ |
-| Orders | ✅ | ✅ |
-| Supplies | ✅ | ✅ |
-| Stock Transactions | ✅ | ✅ |
-| Employees (Users) | ✅ | ❌ |
+| Feature                              | Admin | Employee |
+| ------------------------------------ | ----- | -------- |
+| Dashboard                            | ✅    | ✅       |
+| Products                             | ✅    | ✅       |
+| Warehouses                           | ✅    | ✅       |
+| Suppliers                            | ✅    | ✅       |
+| Customers                            | ✅    | ✅       |
+| Orders                               | ✅    | ✅       |
+| Supplies                             | ✅    | ✅       |
+| Stock Transactions                   | ✅    | ✅       |
+| Inventory (browse)                   | ✅    | ✅       |
+| Low stock alerts (notification bell) | ✅    | ❌       |
+| Employees (Users)                    | ✅    | ❌       |
 
 ---
 
@@ -319,10 +359,10 @@ Use the **In / Out** filter at the top to switch between:
 
 Adminer is available at **[http://localhost:8080](http://localhost:8080)** for browsing your database visually.
 
-| Field | Value |
-|---|---|
-| System | MySQL |
-| Server | `mysql` |
+| Field    | Value                            |
+| -------- | -------------------------------- |
+| System   | MySQL                            |
+| Server   | `mysql`                          |
 | Username | from your `.env` (`DB_USERNAME`) |
 | Password | from your `.env` (`DB_PASSWORD`) |
 | Database | from your `.env` (`DB_DATABASE`) |
@@ -336,9 +376,9 @@ app/
 ├── Enums/              # OrderStatus, StockTransactionType, UserRole, ProductUnit
 ├── Filament/
 │   └── Admin/
-│       └── Resources/ # All Filament resources (Orders, Products, etc.)
+│       └── Resources/ # All Filament resources (Orders, Products, Inventory, etc.)
 ├── Models/             # Eloquent models
-├── Observers/          # Business logic hooks (stock movements, status history)
+├── Observers/          # Business logic hooks (stock movements, low stock alerts, status history)
 database/
 ├── migrations/         # Database schema
 ├── seeders/            # Admin account seeder

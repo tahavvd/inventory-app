@@ -31,6 +31,10 @@ class ProductsTable
                 TextColumn::make('purchase_price')
                     ->money('DZD')
                     ->sortable(),
+                TextColumn::make('reorder_level')
+                    ->label('Reorder level')
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('created_at')
                     ->label('Created')
                     ->since()

@@ -30,11 +30,20 @@ class InventoryTable
                     ->numeric()
                     ->sortable()
                     ->badge()
-                    ->color(fn(int $state): string => match (true) {
-                        $state <= 0 => 'danger',
-                        $state <= 10 => 'warning',
-                        default => 'success',
+                    ->color(function ($state, $record): string {
+                        if ($state <= 0) {
+                            return 'danger';
+                        }
+
+                        if ($state <= $record->product->reorder_level) {
+                            return 'warning';
+                        }
+
+                        return 'success';
                     }),
+                TextColumn::make('product.reorder_level')
+                    ->label('Reorder level')
+                    ->toggleable(),
                 TextColumn::make('product.unit')
                     ->label('Unit')
                     ->badge()
@@ -56,8 +65,11 @@ class InventoryTable
                     ->searchable()
                     ->preload(),
                 Filter::make('low_stock')
-                    ->label('Low stock only (≤ 10)')
-                    ->query(fn($query) => $query->where('quantity', '<=', 10))
+                    ->label('Low stock only')
+                    ->query(fn($query) => $query->whereHas(
+                        'product',
+                        fn($q) => $q->whereColumn('reorder_level', '>=', 'inventory.quantity')
+                    ))
                     ->toggle(),
                 Filter::make('out_of_stock')
                     ->label('Out of stock only')

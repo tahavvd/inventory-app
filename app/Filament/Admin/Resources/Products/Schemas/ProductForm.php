@@ -43,6 +43,14 @@ class ProductForm
                     ->numeric()
                     ->prefix('DZD')
                     ->minValue(0),
+                TextInput::make('reorder_level')
+                    ->label('Reorder level')
+                    ->helperText('You\'ll be alerted when stock at any warehouse falls to or below this level.')
+                    ->required()
+                    ->numeric()
+                    ->integer()
+                    ->minValue(0)
+                    ->default(10),
             ]);
     }
 }
