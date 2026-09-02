@@ -1,0 +1,2 @@
+[deploy]
+preDeployCommand = "php artisan migrate --seed --force && php artisan cache:clear && php artisan config:clear"
