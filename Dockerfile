@@ -26,6 +26,8 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-pl
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
+COPY php-fpm-pool.conf /usr/local/etc/php-fpm.d/zz-custom.conf
+
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
@@ -33,4 +35,3 @@ RUN chmod +x /usr/local/bin/start.sh
 EXPOSE 80
 
 CMD ["/usr/local/bin/start.sh"]
-
