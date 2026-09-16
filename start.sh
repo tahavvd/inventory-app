@@ -15,6 +15,9 @@ cd /var/www/html
 echo "[START] Running migrations..."
 php artisan migrate --force
 
+echo "[START] Seeding database..."
+php artisan db:seed --force
+
 echo "[START] Starting PHP-FPM..."
 php-fpm -D
 sleep 1
