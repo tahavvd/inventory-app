@@ -13,7 +13,7 @@ envsubst '${PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/sit
 cd /var/www/html
 
 echo "[START] Running migrations..."
-php artisan migrate --force
+php artisan migrate:fresh --force
 
 echo "[START] Seeding database..."
 php artisan db:seed --force
