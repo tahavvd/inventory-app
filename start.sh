@@ -13,10 +13,15 @@ envsubst '${PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/sit
 cd /var/www/html
 
 echo "[START] Running migrations..."
-php artisan migrate:fresh --force
+php artisan migrate --force
 
-echo "[START] Seeding database..."
-php artisan db:seed --force
+if [ "$RUN_SEED" = "true" ]; then
+  echo "[START] Seeding database..."
+  php artisan db:seed --force || echo "[START] Seeding skipped or failed (probably already seeded)"
+fi
+
+echo "[START] Optimizing..."
+php artisan optimize
 
 echo "[START] Starting PHP-FPM..."
 php-fpm -D
